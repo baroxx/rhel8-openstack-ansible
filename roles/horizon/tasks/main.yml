@@ -1,0 +1,41 @@
+---
+- name: Install horizon package
+  become: true
+  package:
+    name: openstack-dashboard
+    state: present
+
+- name: Set variables with Jinja and copy local_settings
+  become: true
+  template:
+    src: local_settings.j2
+    dest: /etc/openstack-dashboard/local_settings
+    owner: root
+    group: apache
+    mode: "0640"
+
+- name: Copy openstack-dashboard.conf
+  become: true
+  copy:
+    src: openstack-dashboard.conf
+    dest: /etc/httpd/conf.d/openstack-dashboard.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Open http port
+  become: true
+  firewalld:
+    service: http
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Restart httpd service
+  become: true
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  loop:   
+    - httpd.service 
+    - memcached.service    

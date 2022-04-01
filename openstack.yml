@@ -1,0 +1,69 @@
+---
+- hosts: all
+  vars_files:
+    - constants.yml
+  environment:
+    - OS_PROJECT_DOMAIN_NAME: default
+    - OS_USER_DOMAIN_NAME: default
+    - OS_PROJECT_NAME: admin
+    - OS_USERNAME: admin
+    - OS_PASSWORD: "{{ keystone['admin'] }}"
+    - OS_AUTH_URL: http://{{ net['controller']['hostname'] }}:5000/v3/
+    - OS_IDENTITY_API_VERSION: 3
+    - OS_IMAGE_API_VERSION: 2
+
+  tasks:
+  
+    - name: Prepare Openstack
+      import_role:
+        name: prepare
+
+    - name: Install misc services for Openstack
+      import_role:
+        name: misc
+      when: inventory_hostname in groups["controll"]
+
+    - name: Install keystone
+      import_role:
+        name: keystone
+      when: inventory_hostname in groups["controll"]
+
+    - name: Install glance
+      import_role:
+        name: glance
+      when: inventory_hostname in groups["controll"]
+
+    - name: Install nova on controller
+      import_role:
+        name: nova_controller
+      when: inventory_hostname in groups["controll"]
+
+    - name: Install nova on compute nodes
+      import_role:
+        name: nova_compute
+      when: inventory_hostname in groups["compute"]
+
+    - name: Install neutron on controller
+      import_role:
+        name: neutron_controller
+      when: inventory_hostname in groups["controll"]
+
+    - name: Install neutron on compute nodes
+      import_role:
+        name: neutron_compute
+      when: inventory_hostname in groups["compute"]
+
+    - name: Install swift on compute nodes
+      import_role:
+        name: swift_compute
+      when: inventory_hostname in groups["object"]
+
+    - name: Install swift on controller
+      import_role:
+        name: swift_controller
+      when: inventory_hostname in groups["controll"]
+
+    - name: Install horizon
+      import_role:
+        name: horizon
+      when: inventory_hostname in groups["controll"]

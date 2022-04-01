@@ -1,0 +1,124 @@
+---
+- name: Install http packages
+  become: true
+  package:
+    name: 
+      - httpd
+      - mod_wsgi
+    state: present
+
+- name: Start httpd service
+  become: true
+  systemd:
+    name: httpd.service
+    state: started
+
+- name: Install mariadb packages
+  become: true
+  package:
+    name: 
+      - mariadb
+      - mariadb-server
+      - python3-PyMySQL
+    state: present
+
+- name: Open 5672 TCP port
+  become: true
+  firewalld:
+    port: 5672/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Set variables with Jinja and copy openstack.cnf
+  become: true
+  template:
+    src: openstack.cnf.j2
+    dest: /etc/my.cnf.d/openstack.cnf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start mariadb service
+  become: true
+  systemd:
+    name: mariadb.service
+    state: started
+
+- name: Install rabbitmq packages
+  become: true
+  package:
+    name: rabbitmq-server
+    state: present
+
+- name: Start rabbitmq-server service
+  become: true
+  systemd:
+    name: rabbitmq-server.service
+    state: started
+
+- name: Add rabbitmq user for OpenStack
+  become: true
+  no_log: true
+  rabbitmq_user:
+    user: openstack
+    password: "{{ rabbit['pass'] }}"
+    configure_priv: .*
+    read_priv: .*
+    write_priv: .*
+    state: present
+
+- name: Install memcached packages
+  become: true
+  package:
+    name: 
+      - memcached
+      - python3-memcached
+    state: present
+
+- name: Copy memcached
+  become: true
+  template:
+    src: memcached
+    dest: /etc/sysconfig/memcached
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Start memcached service
+  become: true
+  systemd:
+    name: memcached.service
+    state: started
+
+- name: Install etcd packages
+  become: true
+  package:
+    name: etcd
+    state: present
+
+- name: Set variables with Jinja and copy etcd.conf
+  become: true
+  template:
+    src: etcd.conf.j2
+    dest: /etc/etcd/etcd.conf
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Open 2380 and 2379 TCP ports
+  become: true
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  loop: 
+    - 2380/tcp
+    - 2379/tcp
+
+- name: Start etcd service
+  become: true
+  systemd:
+    name: etcd.service
+    state: started

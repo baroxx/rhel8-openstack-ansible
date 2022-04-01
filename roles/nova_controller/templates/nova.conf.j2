@@ -1,0 +1,76 @@
+[DEFAULT]
+
+my_ip = {{ net['controller']['hostname'] }}
+enabled_apis=osapi_compute,metadata
+transport_url = rabbit://openstack:{{ rabbit['pass'] }}@{{ net['controller']['hostname'] }}:5672/
+use_neutron = true
+
+[api]
+
+auth_strategy=keystone
+
+[api_database]
+
+connection = mysql+pymysql://nova:{{ nova['db'] }}@{{ net['controller']['hostname'] }}/nova_api
+
+[database]
+
+connection = mysql+pymysql://nova:{{ nova['db'] }}@{{ net['controller']['hostname'] }}/nova
+
+[glance]
+
+api_servers = http://{{ net['controller']['hostname'] }}:9292
+
+[keystone_authtoken]
+
+www_authenticate_uri  = http://{{ net['controller']['hostname'] }}:5000
+auth_url = http://{{ net['controller']['hostname'] }}:5000/v3
+auth_uri = http://{{ net['controller']['hostname'] }}:5000/v3
+region_name = RegionOne
+memcached_servers = {{ net['controller']['hostname'] }}:11211
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = nova
+password = {{ nova['user'] }}
+
+[neutron]
+
+auth_url = http://{{ net['controller']['hostname'] }}:5000/v3
+project_name = service
+project_domain_name = Default
+user_domain_name = Default
+region_name = RegionOne
+auth_type = password
+username = neutron
+password = {{ neutron['user'] }}
+service_metadata_proxy = true
+metadata_proxy_shared_secret = {{ metadata['pass'] }}
+
+[oslo_concurrency]
+
+lock_path=/var/lib/nova/tmp
+
+[placement]
+
+auth_url = http://{{ net['controller']['hostname'] }}:5000/v3
+auth_uri = http://{{ net['controller']['hostname'] }}:5000/v3
+project_name = service
+project_domain_name = Default
+user_domain_name = Default
+region_name = RegionOne
+auth_type = password
+username = placement
+password = {{ placement['user'] }}
+
+[scheduler]
+
+discover_hosts_in_cells_interval=300
+
+[vnc]
+
+enabled=true
+server_listen = {{ net['controller']['hostname'] }}
+server_proxyclient_address = {{ net['controller']['hostname'] }}
+novncproxy_base_url = http://{{ net['controller']['hostname'] }}:6080/vnc_auto.html

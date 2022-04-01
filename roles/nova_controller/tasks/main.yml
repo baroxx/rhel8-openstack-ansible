@@ -1,0 +1,229 @@
+---
+- name: Create nova_api database
+  mysql_db:
+    name: nova_api
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant grants to nova_api database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ nova['db'] }}'
+      - GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY '{{ nova['db'] }}'
+
+- name: Create nova database
+  mysql_db:
+    name: nova
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant grants to nova database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ nova['db'] }}'
+      - GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY '{{ nova['db'] }}'
+
+- name: Create nova_cell0 database
+  mysql_db:
+    name: nova_cell0
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant grants to nova_cell0 database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ nova['db'] }}'
+      - GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY '{{ nova['db'] }}'
+
+- name: Create placement database
+  mysql_db:
+    name: placement
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant grants to placement database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON placement.* TO 'placement'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ placement['db'] }}'
+      - GRANT ALL PRIVILEGES ON placement.* TO 'placement'@'%' IDENTIFIED BY '{{ placement['db'] }}'
+
+- name: Create nova user in OpenStack
+  no_log: true
+  openstack.cloud.identity_user:
+    state: present
+    name: nova
+    password: "{{ nova['user'] }}"
+    domain: default
+
+- name: Add nova user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: nova
+    role: admin
+    project: service
+ 
+- name: Creates nova network in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: nova
+     service_type: compute
+     description: OpenStack Compute Service
+
+- name: Create compute endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: nova
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:8774/v2.1
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+    - admin
+
+- name: Create placement user in OpenStack
+  openstack.cloud.identity_user:
+    state: present
+    name: placement
+    password: "{{ placement['user'] }}"
+    domain: default
+
+- name: Add placement user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: placement
+    role: admin
+    project: service
+    
+- name: Creates placement network in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: placement
+     service_type: placement
+     description: OpenStack Placement Service
+
+- name: Create placement endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: placement
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:8778/v3
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+    - admin
+
+- name: Open 8774 and 8778 TCP ports
+  become: true
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  loop: 
+    - 8774/tcp
+    - 8778/tcp
+
+- name: Install nova packages
+  become: true
+  package:
+    name:
+      - openstack-nova-api
+      - openstack-nova-conductor
+      - openstack-nova-novncproxy
+      - openstack-nova-scheduler
+      - openstack-placement-api
+    state: present 
+
+- name: Set variables with Jinja and copy nova.conf
+  become: true
+  template:
+    src: nova.conf.j2
+    dest: /etc/nova/nova.conf
+    owner: root
+    group: nova
+    mode: "0640"
+
+- name: Set variables with Jinja and copy placement.conf 
+  become: true
+  template:
+    src: placement.conf.j2
+    dest: /etc/placement/placement.conf
+    owner: root
+    group: placement
+    mode: "0640"
+
+- name: Populate the nova-api database
+  become: true
+  command: su -s /bin/sh -c "nova-manage api_db sync" nova
+
+- name: Register the cell0 database
+  become: true 
+  command: su -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
+
+- name: Check if cell1 exists
+  become: true 
+  register: cell1out
+  command: nova-manage cell_v2 list_cells
+
+- name: Create the cell1 cell
+  become: true 
+  command: su -s /bin/sh -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
+  when: "'cell1' not in cell1out.stdout"
+
+- name: Populate the nova database
+  become: true
+  command: su -s /bin/sh -c "nova-manage db sync" nova
+
+- name: Database syncs for placement
+  become: true
+  command: su -s /bin/sh -c "placement-manage db sync" placement
+
+- name: Enables and starts nova services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop: 
+    - openstack-nova-api.service
+    - openstack-nova-scheduler.service
+    - openstack-nova-conductor.service
+    - openstack-nova-novncproxy.service
+
+- name: Restart httpd service
+  become: true
+  systemd:
+    name: httpd
+    state: restarted

@@ -1,0 +1,7 @@
+[database]
+
+connection = mysql+pymysql://keystone:{{ keystone['db'] }}@{{ net['controller']['hostname'] }}/keystone
+
+[token]
+
+provider = fernet

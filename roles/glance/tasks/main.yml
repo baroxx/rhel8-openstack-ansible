@@ -1,0 +1,95 @@
+---
+- name: Create glance database
+  mysql_db:
+    name: glance
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant grants to glance database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ glance['db'] }}';
+      - GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY '{{ glance['db'] }}';
+
+- name: Create glance user in OpenStack
+  no_log: true
+  openstack.cloud.identity_user:
+    state: present
+    name: glance
+    password: "{{ glance['user'] }}"
+    domain: default
+
+- name: Add glance user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: glance
+    role: admin
+    project: service
+
+- name: Create glance service in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: glance
+     service_type: image
+     description: OpenStack Image Service
+
+- name: Create image endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: glance
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:9292/v3
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+    - admin
+
+- name: Open 9292 TCP port
+  become: true
+  firewalld:
+    port: 9292/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Install glance package
+  become: true
+  package:
+    name: openstack-glance
+    state: present
+
+- name: Set variables with Jinja and copy glance-api.conf
+  become: true
+  template:
+    src: glance-api.conf.j2
+    dest: /etc/glance/glance-api.conf
+    owner: root
+    group: glance
+    mode: "0644"
+
+- name: Open 11211 TCP port
+  become: true
+  firewalld:
+    port: 11211/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Database sync for glance
+  become: true
+  command: su -s /bin/sh -c "glance-manage db_sync" glance
+
+- name: Enable and start glance service
+  become: true
+  systemd:
+    name: openstack-glance-api.service
+    enabled: yes
+    state: started

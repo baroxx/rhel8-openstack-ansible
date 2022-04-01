@@ -1,0 +1,82 @@
+---
+- name: Create keystone database
+  mysql_db:
+    name: keystone
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant grants to keystone database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ keystone['db'] }}';
+      - GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '{{ keystone['db'] }}';
+
+- name: Install keystone package
+  become: true
+  package:
+    name: openstack-keystone
+    state: present
+
+- name: Set variables with Jinja and copy keystone.conf
+  become: true
+  template:
+    src: keystone.conf.j2
+    dest: /etc/keystone/keystone.conf
+    owner: root
+    group: keystone
+    mode: "0640"
+
+- name: Database sync for keystone
+  become: true
+  command: su -s /bin/sh -c "keystone-manage db_sync" keystone
+
+- name: Fernet Setup (OpenStack)
+  become: true
+  command: keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+
+- name: Credential setup (OpenStack)
+  become: true
+  command: keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+
+- name: Bootstrap keystone
+  become: true
+  command: keystone-manage bootstrap --bootstrap-password {{ keystone['admin'] }} --bootstrap-admin-url http://{{ net['controller']['hostname'] }}:5000/v3/ --bootstrap-internal-url http://{{ net['controller']['hostname'] }}:5000/v3/ --bootstrap-public-url http://{{ net['controller']['hostname'] }}:5000/v3/ --bootstrap-region-id RegionOne
+
+#echo "ServerName controller" >> /etc/httpd/conf/httpd.conf
+
+- name: Link wsgi-keystone.conf to httpd config
+  become: true
+  file: 
+    src: /usr/share/keystone/wsgi-keystone.conf
+    dest: /etc/httpd/conf.d/wsgi-keystone.conf
+    state: link
+
+- name: Restart httpd service
+  become: true
+  systemd:
+    name: httpd.service
+    state: restarted
+
+- name: Open 5000 TCP port
+  become: true
+  firewalld:
+    port: 5000/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Create default project "Service"
+  openstack.cloud.project:
+    endpoint_type: admin
+    state: present
+    name: service
+    domain_id: default
+    enabled: true

@@ -1,0 +1,26 @@
+---
+- name: Install keystone package
+  become: true
+  package:
+    name: openstack-nova-compute
+    state: present
+
+- name: Set variables with Jinja and copy nova.conf
+  become: true
+  template:
+    src: nova.conf.j2
+    dest: /etc/nova/nova.conf
+    owner: root
+    group: nova
+    mode: "0640"
+
+# if for hardware accelaration
+- name: Enables and starts nova services
+  become: true
+  systemd: 
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:  
+    - libvirtd.service
+    - openstack-nova-compute.service  

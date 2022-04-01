@@ -1,0 +1,120 @@
+---
+- name: Create swift user in OpenStack
+  openstack.cloud.identity_user:
+    state: present
+    name: swift
+    password: "{{ swift['user'] }}"
+    domain: default
+
+- name: Add swift user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: swift
+    role: admin
+    project: service
+
+- name: Create swift service in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: swift
+     service_type: object-store
+     description: OpenStack Object Storage
+
+- name: Create image endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: swift
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:8080/v1/AUTH_%(project_id)s
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+
+- name: Create image endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: swift
+    endpoint_interface: admin
+    url: http://{{ net['controller']['hostname'] }}:8080/v1
+    region: RegionOne
+    state: present
+
+- name: Open 8080 TCP port
+  become: true
+  firewalld:
+    port: 8080/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Install swift packages
+  become: true
+  package:
+    name: 
+      - openstack-swift-proxy
+      - python3-swiftclient
+      - python3-keystoneclient
+      - python3-keystonemiddleware
+    state: present
+
+- name: Set variables with Jinja and copy proxy-server.conf
+  become: true
+  template:
+    src: proxy-server.conf.j2
+    dest: /etc/swift/proxy-server.conf
+    owner: root
+    group: swift
+    mode: "0644"
+
+- name: Set variables with Jinja and copy swift.conf
+  become: true
+  template:
+    src: swift.conf.j2
+    dest: /etc/swift/swift.conf
+    owner: root
+    group: swift
+    mode: "0644"
+
+- name: Create the base account.builder file
+  become: true
+  command: chdir=/etc/swift swift-ring-builder account.builder create 10 3 1
+
+- name: Add each storage node to account ring
+  become: true
+  command: chdir=/etc/swift swift-ring-builder account.builder add --region 1 --zone 1 --ip {{ item }} --port 6202 --device sda --weight 100
+  with_items: "{{ groups['object'] }}"
+
+- name: Rebalance account ring
+  become: true
+  command: chdir=/etc/swift swift-ring-builder account.builder rebalance
+
+- name: Create the base container.builder file
+  become: true
+  command: chdir=/etc/swift swift-ring-builder container.builder create 10 3 1
+
+- name: Add each storage node to container ring
+  become: true
+  command: chdir=/etc/swift swift-ring-builder container.builder add --region 1 --zone 1 --ip {{ item }} --port 6201 --device sda --weight 100
+  with_items: "{{ groups['object'] }}"
+
+- name: Rebalance container ring
+  become: true
+  command: chdir=/etc/swift swift-ring-builder container.builder rebalance
+
+- name: Create the base object.builder file
+  become: true
+  command: chdir=/etc/swift swift-ring-builder object.builder create 10 3 1
+
+- name: Add each storage node to object ring
+  become: true
+  command: chdir=/etc/swift swift-ring-builder object.builder add --region 1 --zone 1 --ip {{ item }} --port 6200 --device sda --weight 100
+  with_items: "{{ groups['object'] }}"
+
+- name: Rebalance object ring
+  command: chdir=/etc/swift swift-ring-builder object.builder rebalance
+
+- name: Enables and starts swift services
+  become: true
+  systemd:
+    name: openstack-swift-proxy.service
+    enabled: yes
+    state: started

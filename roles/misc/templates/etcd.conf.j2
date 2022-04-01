@@ -1,0 +1,11 @@
+#[Member]
+ETCD_DATA_DIR="/var/lib/etcd/default.etcd"
+ETCD_LISTEN_PEER_URLS="http://{{ net['controller']['ip'] }}:2380"
+ETCD_LISTEN_CLIENT_URLS="http://{{ net['controller']['ip'] }}:2379"
+ETCD_NAME="{{ net['controller']['hostname'] }}"
+#[Clustering]
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://{{ net['controller']['ip'] }}:2380"
+ETCD_ADVERTISE_CLIENT_URLS="http://{{ net['controller']['ip'] }}:2379"
+ETCD_INITIAL_CLUSTER="controller=http://{{ net['controller']['ip'] }}:2380"
+ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster-01"
+ETCD_INITIAL_CLUSTER_STATE="new"

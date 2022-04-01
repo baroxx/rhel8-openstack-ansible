@@ -1,0 +1,4 @@
+{{ net['controller']['ip'] }}    {{ net['controller']['hostname'] }}
+{% for node in net['compute_nodes'] %}
+{{ node['ip'] }}    {{ node['hostname'] }}
+{% endfor %}

@@ -1,0 +1,55 @@
+---
+- name: Set hosts
+  become: true
+  template:
+    src: hosts.j2
+    dest: /etc/hosts
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Set chrony settings
+  command: echo "server {{ net['controller']['hostname'] }} iburst" > /etc/chrony.conf
+  when: inventory_hostname in groups["compute"]
+
+- name: Enables and starts chronyd service
+  become: true
+  systemd:
+    name: chronyd.service
+    enabled: yes
+    state: started
+
+- name: Add RHEL8 repos
+  become: true
+  command: subscription-manager repos --enable=rhel-8-for-x86_64-appstream-rpms --enable=rhel-8-for-x86_64-supplementary-rpms --enable=codeready-builder-for-rhel-8-x86_64-rpms
+  when: ansible_distribution == 'RedHat'
+
+- name: Add RDO release repo
+  become: true
+  yum: 
+    name: https://www.rdoproject.org/repos/rdo-release.el8.rpm
+    disable_gpg_check: true
+    state: present
+
+- name: Fix CentOS version issue
+  become: true
+  replace: 
+    path: "{{ item }}"
+    regexp: \$stream
+    replace: 8-stream
+  loop:
+    - /etc/yum.repos.d/advanced-virtualization.repo
+    - /etc/yum.repos.d/ceph-pacific.repo
+    - /etc/yum.repos.d/messaging.repo
+    - /etc/yum.repos.d/nfv-openvswitch.repo
+    - /etc/yum.repos.d/rdo-release.repo
+    - /etc/yum.repos.d/rdo-testing.repo
+  when: ansible_distribution == 'RedHat'
+
+- name: Install OpenStack CLI and OpenStack selinux packages
+  become: true
+  package:
+    name: 
+      - python3-openstackclient
+      - openstack-selinux
+    state: present

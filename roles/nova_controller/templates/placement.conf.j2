@@ -1,0 +1,18 @@
+[placement_database]
+
+connection = mysql+pymysql://placement:{{ placement['db'] }}@{{ net['controller']['hostname'] }}/placement
+
+[api]
+
+auth_strategy = keystone
+
+[keystone_authtoken]
+
+auth_url = http://{{ net['controller']['hostname'] }}:5000/v3
+memcached_servers = {{ net['controller']['hostname'] }}:11211
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = placement
+password = {{ placement['user'] }}

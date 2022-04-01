@@ -1,0 +1,159 @@
+---
+- name: Create neutron database
+  mysql_db:
+    name: neutron
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant grants to neutron database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ neutron['db'] }}';
+      - GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY '{{ neutron['db'] }}';
+
+- name: Create neutron user in OpenStack
+  openstack.cloud.identity_user:
+    state: present
+    name: neutron
+    password: "{{ neutron['user'] }}"
+    domain: default
+
+- name: Add neutron user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: neutron
+    role: admin
+    project: service
+
+- name: Creates neutron network in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: neutron
+     service_type: network
+     description: OpenStack Network Service
+
+- name: Create network endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: neutron
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:9696/v3
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+    - admin
+
+- name: Install neutron packages
+  become: true
+  package:
+    name:
+      - openstack-neutron
+      - openstack-neutron-ml2
+      - openstack-neutron-linuxbridge
+      - ebtables
+    state: present 
+
+- name: Set variables with Jinja and copy neutron.conf
+  become: true
+  template:
+    src: neutron.conf.j2
+    dest: /etc/neutron/neutron.conf
+    owner: root
+    group: neutron
+    mode: "0640"
+
+- name: Copy ml2_conf.ini 
+  become: true
+  copy:
+    src: ml2_conf.ini 
+    dest: /etc/neutron/plugins/ml2/ml2_conf.ini
+    owner: root
+    group: neutron
+    mode: "0640"
+
+- name: Set variables with Jinja and copy linuxbridge_agent.ini
+  become: true
+  template:
+    src: linuxbridge_agent.ini.j2
+    dest: /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+    owner: root
+    group: neutron
+    mode: "0640"
+
+- name: Copy l3_agent.ini
+  become: true
+  copy:
+    src: l3_agent.ini
+    dest: /etc/neutron/l3_agent.ini
+    owner: root
+    group: neutron
+    mode: "0640"
+
+- name: Copy dhcp_agent.ini
+  become: true
+  copy:
+    src: dhcp_agent.ini
+    dest: /etc/neutron/dhcp_agent.ini
+    owner: root
+    group: neutron
+    mode: "0640"
+
+- name: Enable network bridge for neutron ml2 plugin
+  become: true
+  shell: |
+    echo "net.bridge.bridge-nf-call-iptables = 1
+    net.bridge.bridge-nf-call-ip6tables = 1" > /etc/sysctl.conf 
+
+- name: Set variables with Jinja and copy metadata_agent.ini
+  become: true
+  template:
+    src: metadata_agent.ini.j2
+    dest: /etc/neutron/metadata_agent.ini
+    owner: root
+    group: neutron
+    mode: "0640"
+
+- name: Link ml2_conf.ini to neutron config
+  become: true
+  file: 
+    src: /etc/neutron/plugins/ml2/ml2_conf.ini
+    dest: /etc/neutron/plugin.ini
+    state: link
+
+- name: Database update for ml2 plugin
+  become: true
+  command: su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
+
+- name: Enable SELinux option os_neutron_dac_override
+  become: true
+  ansible.posix.seboolean:
+    name: os_neutron_dac_override
+    state: yes
+    persistent: yes
+
+- name: Restart nova-api service
+  become: true
+  systemd:
+    name: openstack-nova-api.service
+    state: restarted
+
+- name: Enables and starts nova services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:       
+    - neutron-server.service
+    - neutron-linuxbridge-agent.service
+    - neutron-dhcp-agent.service
+    - neutron-metadata-agent.service
+    - neutron-l3-agent.service

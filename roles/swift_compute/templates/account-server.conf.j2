@@ -1,0 +1,17 @@
+[DEFAULT]
+
+bind_ip = {{ net['controller']['ip'] }}
+bind_port = 6202
+user = swift
+swift_dir = /etc/swift
+devices = /srv/node
+mount_check = True
+
+[pipeline:main]
+
+pipeline = healthcheck recon account-server
+
+[filter:recon]
+
+use = egg:swift#recon
+recon_cache_path = /var/cache/swift

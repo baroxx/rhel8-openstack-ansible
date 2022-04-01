@@ -1,0 +1,115 @@
+---
+- name: Install rsync package
+  become: true
+  package:
+    name: rsync
+    state: present
+
+- name: Create directory for object storage
+  ansible.builtin.file:
+    path: /srv/node/object
+    state: directory
+    user: swift
+    group: swift
+    mode: '0755'
+
+- name: Set variables with Jinja and copy rsyncd.conf
+  become: true
+  template:
+    src: rsyncd.conf.j2
+    dest: /etc/rsyncd.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable and start rsyncd service
+  become: true
+  systemd:
+    name: rsyncd.service
+    enabled: yes
+    state: started
+
+- name: Install swift packages
+  become: true
+  package:
+    name: 
+      - openstack-swift-account 
+      - openstack-swift-container
+      - openstack-swift-object
+    state: present
+
+- name: Set variables with Jinja and copy account-server.conf
+  become: true
+  template:
+    src: account-server.conf.j2
+    dest: /etc/swift/account-server.conf
+    owner: root
+    group: swift
+    mode: "0644"
+
+- name: Set variables with Jinja and copy container-server.conf
+  become: true
+  template:
+    src: container-server.conf.j2
+    dest: /etc/swift/container-server.conf
+    owner: root
+    group: swift
+    mode: "0644"
+
+- name: Set variables with Jinja and copy object-server.conf
+  become: true
+  template:
+    src: object-server.conf.j2
+    dest: /etc/swift/object-server.conf
+    owner: root
+    group: swift
+    mode: "0644"
+
+- name: Create directory for swift cache
+  ansible.builtin.file:
+    path: /var/cache/swift
+    state: directory
+    user: root
+    group: swift
+    mode: '0755'
+
+- name: Set variables with Jinja and copy swift.conf
+  become: true
+  template:
+    src: swift.conf.j2
+    dest: /etc/swift/swift.conf
+    owner: root
+    group: swift
+    mode: "0644"
+
+- name: Open 6200, 6201 and 6202 TCP ports
+  become: true
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  loop: 
+    - 6200/tcp
+    - 6201/tcp
+    - 6202/tcp
+
+- name: Enables and starts swift services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:       
+    - openstack-swift-account.service
+    - openstack-swift-account-auditor.service
+    - openstack-swift-account-reaper.service
+    - openstack-swift-account-replicator.service
+    - openstack-swift-container.service
+    - openstack-swift-container-auditor.service
+    - openstack-swift-container-replicator.service
+    - openstack-swift-container-updater.service
+    - openstack-swift-object.service
+    - openstack-swift-object-auditor.service
+    - openstack-swift-object-replicator.service
+    - openstack-swift-object-updater.service
