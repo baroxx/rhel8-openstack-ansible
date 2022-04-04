@@ -19,7 +19,7 @@
      service_type: object-store
      description: OpenStack Object Storage
 
-- name: Create image endpoints in OpenStack
+- name: Create object endpoints in OpenStack
   openstack.cloud.endpoint:
     service: swift
     endpoint_interface: "{{ item }}"
@@ -30,7 +30,7 @@
     - public
     - internal
 
-- name: Create image endpoints in OpenStack
+- name: Create object endpoints in OpenStack
   openstack.cloud.endpoint:
     service: swift
     endpoint_interface: admin
@@ -110,6 +110,7 @@
   with_items: "{{ groups['object'] }}"
 
 - name: Rebalance object ring
+  become: true
   command: chdir=/etc/swift swift-ring-builder object.builder rebalance
 
 - name: Enables and starts swift services
