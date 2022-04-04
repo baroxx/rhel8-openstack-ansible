@@ -144,7 +144,7 @@
     - internal
     - admin
 
-- name: Open 8774 and 8778 TCP ports
+- name: Open 8774 and 8778 TCP ports for nova endpoints
   become: true
   firewalld:
     port: "{{ item }}"

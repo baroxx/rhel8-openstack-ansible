@@ -1,5 +1,5 @@
 ---
-- name: Install keystone package
+- name: Install neutron package
   become: true
   package:
     name: 

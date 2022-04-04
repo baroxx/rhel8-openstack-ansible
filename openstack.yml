@@ -53,7 +53,7 @@
         name: neutron_compute
       when: inventory_hostname in groups["compute"]
 
-    - name: Install swift on compute nodes
+    - name: Install swift on object nodes
       import_role:
         name: swift_compute
       when: inventory_hostname in groups["object"]

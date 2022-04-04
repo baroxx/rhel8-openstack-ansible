@@ -52,7 +52,7 @@
     - internal
     - admin
 
-- name: Open 9292 TCP port
+- name: Open 9292 TCP port for glance endpoints
   become: true
   firewalld:
     port: 9292/tcp

@@ -1,5 +1,5 @@
 ---
-- name: Install keystone package
+- name: Install nova package
   become: true
   package:
     name: openstack-nova-compute
@@ -14,7 +14,6 @@
     group: nova
     mode: "0640"
 
-# if for hardware accelaration
 - name: Enables and starts nova services
   become: true
   systemd: 

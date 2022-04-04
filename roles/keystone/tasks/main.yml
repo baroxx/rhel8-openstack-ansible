@@ -38,11 +38,11 @@
   become: true
   command: su -s /bin/sh -c "keystone-manage db_sync" keystone
 
-- name: Fernet Setup (OpenStack)
+- name: Fernet Setup (keystone)
   become: true
   command: keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
 
-- name: Credential setup (OpenStack)
+- name: Credential setup (keystone)
   become: true
   command: keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
 
@@ -65,7 +65,7 @@
     name: httpd.service
     state: restarted
 
-- name: Open 5000 TCP port
+- name: Open 5000 TCP port for identity endpoints
   become: true
   firewalld:
     port: 5000/tcp
