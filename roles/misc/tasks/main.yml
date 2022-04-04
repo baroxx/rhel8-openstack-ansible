@@ -7,10 +7,19 @@
       - mod_wsgi
     state: present
 
+- name: Set hostname for controller
+  become: true
+  replace: 
+    path: /etc/httpd/conf/httpd.conf
+    regexp: \#ServerName www.example.com:80
+    replace: ServerName {{ net['controller']['hostname'] }}
+
+
 - name: Start httpd service
   become: true
   systemd:
     name: httpd.service
+    enabled: yes
     state: started
 
 - name: Install mariadb packages
@@ -22,7 +31,7 @@
       - python3-PyMySQL
     state: present
 
-- name: Open 5672 TCP port
+- name: Open 5672 TCP port for mariadb
   become: true
   firewalld:
     port: 5672/tcp
@@ -43,6 +52,7 @@
   become: true
   systemd:
     name: mariadb.service
+    enabled: yes
     state: started
 
 - name: Install rabbitmq packages
@@ -55,6 +65,7 @@
   become: true
   systemd:
     name: rabbitmq-server.service
+    enabled: yes
     state: started
 
 - name: Add rabbitmq user for OpenStack
@@ -89,6 +100,7 @@
   become: true
   systemd:
     name: memcached.service
+    enabled: yes
     state: started
 
 - name: Install etcd packages
@@ -121,4 +133,5 @@
   become: true
   systemd:
     name: etcd.service
+    enabled: yes
     state: started
