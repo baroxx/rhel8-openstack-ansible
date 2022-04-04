@@ -44,3 +44,7 @@ There are manual steps if the role for swift is used: You need to copy the accou
 # OpenStack module
 
 This project uses the [OpenStack module](https://docs.ansible.com/ansible/latest/collections/openstack/cloud/index.html)
+
+# Copyright
+
+The config files in this repository are adjusted files based on the default configs on RHEL8 with RDO. [local_settings](roles/horizon/templates/local_settings.j2) is provided by OpenStack and adjusted in this project.
