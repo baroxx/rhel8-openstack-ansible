@@ -2,15 +2,15 @@
 - name: Install rsync package
   become: true
   package:
-    name: rsync
+    name: rsync-daemon
     state: present
 
 - name: Create directory for object storage
+  become: true
   ansible.builtin.file:
     path: /srv/node/object
+    recurse: true
     state: directory
-    user: swift
-    group: swift
     mode: '0755'
 
 - name: Set variables with Jinja and copy rsyncd.conf
@@ -68,9 +68,8 @@
 - name: Create directory for swift cache
   ansible.builtin.file:
     path: /var/cache/swift
+    recurse: true
     state: directory
-    user: root
-    group: swift
     mode: '0755'
 
 - name: Set variables with Jinja and copy swift.conf
