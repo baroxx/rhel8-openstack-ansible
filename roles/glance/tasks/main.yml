@@ -93,3 +93,6 @@
     name: openstack-glance-api.service
     enabled: yes
     state: started
+
+- name: Verify glance installation
+  command: openstack image list

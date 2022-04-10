@@ -80,3 +80,6 @@
     name: service
     domain_id: default
     enabled: true
+
+- name: Verify keystone installation
+  command: openstack user list

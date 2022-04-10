@@ -157,3 +157,6 @@
     - neutron-dhcp-agent.service
     - neutron-metadata-agent.service
     - neutron-l3-agent.service
+
+- name: Verify neutron installation
+  command: openstack extension list --network

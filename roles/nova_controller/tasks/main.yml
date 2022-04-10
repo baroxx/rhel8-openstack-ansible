@@ -227,3 +227,6 @@
   systemd:
     name: httpd
     state: restarted
+
+- name: Verify nova installation
+  command: openstack compute service list
