@@ -1,4 +1,5 @@
+127.0.0.1   localhost
 {{ net['controller']['ip'] }}    {{ net['controller']['hostname'] }}
-{% for node in net['compute_nodes'] %}
+{% for node in net['hosts'] %}
 {{ node['ip'] }}    {{ node['hostname'] }}
 {% endfor %}
