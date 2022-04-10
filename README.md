@@ -1,6 +1,6 @@
-# rhel8-openstack-ansible
+# RHEL8 OpenStack Ansible
 
-This project provides roles to setup a OpenStack cluster with the services listed below:
+This project uses Ansible to setup an OpenStack cluster with the services listed below. 
 
 - Core services
 
@@ -10,12 +10,12 @@ This project provides roles to setup a OpenStack cluster with the services liste
     - **Neutron** - for networking
 - Optional services
 
-    - **Horizon** - OpenStack UI
     - **Swift** - for object storage
+    - **Horizon** - OpenStack UI
 
-Nova and Neutron are splitted into controll and compute nodes. Swift is splitted into controll and object. You can install swift as the object storage on the compute nodes.
+This [project for RHEL8 Kickstart](https://github.com/baroxx/rhel8-kickstart) provides kickstart files to automate the installation of the nodes. There are also scripts to create some virtual machines.
 
-# Requirements
+# Prerequisites
 
 The following packages are required on RHEL8:
 
@@ -23,23 +23,52 @@ The following packages are required on RHEL8:
 - **ansible-collection-community-mysql** for database queries
 - **ansible-collections-openstack** for project, service, endpoint, user and role management
 
-Each target must be accessible via SSH and requires passwordless sudo rights.
+There should be at least one controll node and two compute nodes (three object nodes). Each target must be accessible via SSH and requires passwordless sudo rights.
 
-# Preperation
+Swift uses directories on the object nodes as storage. The [role for the rings](swift_rings) creates rings for all storage devices set in [config.yml](config.yml) (object_storage). Each object node can have multiple storage devices. **The mount point for these storage devices must be at /srv/node/**
 
-1. Update the variables in [constants.yml](constants.yml)
+# Prepare and Run
+
+**Preperation:**
+
+1. Install [required ansible packages](#prerequisites) on the local machine
+1. Prepare passwordless SSH and sudo on all nodes
+1. Swift: Prepare mount points for storage devices on object nodes **(only for Swift)** 
+1. Update the variables in [config.yml](config.yml) (at the moment only a setup with a singe controller node is supported)
 1. Set the IPs in [inventory](inventory)
-1. Select the roles in [openstack.yml](openstack.yml)
+1. Select the [roles](#roles) in [openstack.yml](openstack.yml)
 
-# Run
+**Run:**
 
  ```
-ansible-playbook openstack.yml -i inventory
+ansible-playbook openstack.yml
  ```
 
-## Swift
+# Roles
 
-There are manual steps if the role for swift is used: You need to copy the account.ring.gz, container.ring.gz, and object.ring.gz files to the /etc/swift directory on each storage node.
+You can find more information in the README of the roles. You should install at least the core services mentioned at the top of this README. 
+
+**It is recommended to use the roles in this order.**
+
+- [Preparation](prepare)
+- [Misc Services](misc)
+- [keystone](keystone)
+- [Glance](glance)
+- Nova
+
+    - [Controller](nova_controll)
+    - [Compute node](nova_compute)
+- Neutron
+
+    - [Controller](neutron_controll)
+    - [Compute node](neutron_compute)
+- Swift
+
+    - [Proxy server](swift_proxy)
+    - [Object nodes](swift_object)
+    - [Rings](swift_rings)
+    - [All nodes](swift_all_nodes)
+- [Horizon](Horizon)
 
 # OpenStack module
 
