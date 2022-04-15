@@ -1,0 +1,66 @@
+---
+- name: Create swift user in OpenStack
+  openstack.cloud.identity_user:
+    state: present
+    name: swift
+    password: "{{ swift['user'] }}"
+    domain: default
+
+- name: Add swift user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: swift
+    role: admin
+    project: service
+
+- name: Create swift service in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: swift
+     service_type: object-store
+     description: OpenStack Object Storage
+
+- name: Create object endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: swift
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:8080/v1/AUTH_%(project_id)s
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+
+- name: Create object endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: swift
+    endpoint_interface: admin
+    url: http://{{ net['controller']['hostname'] }}:8080/v1
+    region: RegionOne
+    state: present
+
+- name: Open 8080 TCP port
+  become: true
+  firewalld:
+    port: 8080/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Install swift packages
+  become: true
+  package:
+    name: 
+      - openstack-swift-proxy
+      - python3-swiftclient
+      - python3-keystoneclient
+      - python3-keystonemiddleware
+    state: present
+
+- name: Set variables with Jinja and copy proxy-server.conf
+  become: true
+  template:
+    src: proxy-server.conf.j2
+    dest: /etc/swift/proxy-server.conf
+    owner: root
+    group: swift
+    mode: "0644"

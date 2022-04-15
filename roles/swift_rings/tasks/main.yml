@@ -1,0 +1,60 @@
+---
+- name: Set variables with Jinja and copy swift.conf
+  become: true
+  template:
+    src: swift.conf.j2
+    dest: /etc/swift/swift.conf
+    owner: root
+    group: swift
+    mode: "0644"
+
+- name: Create the base account.builder file
+  become: true
+  command: chdir=/etc/swift swift-ring-builder account.builder create 10 3 1
+
+- name: Add each storage node to account ring
+  become: true
+  command: |
+    chdir=/etc/swift 
+    {% for device in item.storage_devices %}
+      swift-ring-builder account.builder add --region 1 --zone 1 --ip {{ item.ip }} --port 6202 --device {{ device.name }} --weight 100
+    {% endfor %}
+  with_items: "{{ net['object_nodes'] }}"
+
+- name: Rebalance account ring
+  become: true
+  command: chdir=/etc/swift swift-ring-builder account.builder rebalance
+
+- name: Create the base container.builder file
+  become: true
+  command: chdir=/etc/swift swift-ring-builder container.builder create 10 3 1
+
+- name: Add each storage node to container ring
+  become: true
+  command: |
+    chdir=/etc/swift 
+    {% for device in item.storage_devices %}
+      swift-ring-builder container.builder add --region 1 --zone 1 --ip {{ item.ip }} --port 6201 --device {{ device['name'] }} --weight 100
+    {% endfor %}
+  with_items: "{{ net['object_nodes'] }}"
+
+- name: Rebalance container ring
+  become: true
+  command: chdir=/etc/swift swift-ring-builder container.builder rebalance
+
+- name: Create the base object.builder file
+  become: true
+  command: chdir=/etc/swift swift-ring-builder object.builder create 10 3 1
+
+- name: Add each storage node to object ring
+  become: true
+  command: |
+    chdir=/etc/swift 
+    {% for device in item.storage_devices %}
+      swift-ring-builder object.builder add --region 1 --zone 1 --ip {{ item.ip }} --port 6200 --device {{ device['name'] }} --weight 100
+    {% endfor %}
+  with_items: "{{ net['object_nodes'] }}"
+
+- name: Rebalance object ring
+  become: true
+  command: chdir=/etc/swift swift-ring-builder object.builder rebalance

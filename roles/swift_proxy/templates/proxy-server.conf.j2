@@ -30,9 +30,57 @@ user_domain_id = default
 project_name = service
 username = swift
 password = {{ swift['user'] }}
-delay_auth_decision = true
+delay_auth_decision = True
 
 [filter:cache]
 
 use = egg:swift#memcache
 memcache_servers = {{ net['controller']['hostname'] }}:11211
+
+[filter:catch_errors]
+
+use = egg:swift#catch_errors
+
+[filter:gatekeeper]
+
+use = egg:swift#gatekeeper
+
+[filter:healthcheck]
+
+use = egg:swift#healthcheck
+
+[filter:proxy-logging]
+
+use = egg:swift#proxy_logging
+
+[filter:container_sync]
+
+use = egg:swift#container_sync
+
+[filter:bulk]
+
+use = egg:swift#bulk
+
+[filter:ratelimit]
+
+use = egg:swift#ratelimit
+
+[filter:container-quotas]
+
+use = egg:swift#container_quotas
+
+[filter:account-quotas]
+
+use = egg:swift#account_quotas
+
+[filter:slo]
+
+use = egg:swift#slo
+
+[filter:dlo]
+
+use = egg:swift#dlo
+
+[filter:versioned_writes]
+
+use = egg:swift#versioned_writes

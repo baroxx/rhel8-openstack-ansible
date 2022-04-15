@@ -5,14 +5,6 @@
     name: rsync-daemon
     state: present
 
-- name: Create directory for object storage
-  become: true
-  ansible.builtin.file:
-    path: /srv/node/object
-    recurse: true
-    state: directory
-    mode: '0755'
-
 - name: Set variables with Jinja and copy rsyncd.conf
   become: true
   template:
@@ -66,20 +58,23 @@
     mode: "0644"
 
 - name: Create directory for swift cache
-  ansible.builtin.file:
+  become: true
+  file:
     path: /var/cache/swift
     recurse: true
     state: directory
-    mode: '0755'
-
-- name: Set variables with Jinja and copy swift.conf
-  become: true
-  template:
-    src: swift.conf.j2
-    dest: /etc/swift/swift.conf
-    owner: root
+    owner: swift
     group: swift
-    mode: "0644"
+    mode: "0755"
+
+- name: Change permissions for /srv/node directory
+  become: true
+  file:
+    path: /srv/node
+    recurse: true
+    state: directory
+    owner: swift
+    group: swift
 
 - name: Open 6200, 6201 and 6202 TCP ports
   become: true
@@ -92,23 +87,3 @@
     - 6200/tcp
     - 6201/tcp
     - 6202/tcp
-
-- name: Enables and starts swift services
-  become: true
-  systemd:
-    name: "{{ item }}"
-    enabled: yes
-    state: started
-  loop:       
-    - openstack-swift-account.service
-    - openstack-swift-account-auditor.service
-    - openstack-swift-account-reaper.service
-    - openstack-swift-account-replicator.service
-    - openstack-swift-container.service
-    - openstack-swift-container-auditor.service
-    - openstack-swift-container-replicator.service
-    - openstack-swift-container-updater.service
-    - openstack-swift-object.service
-    - openstack-swift-object-auditor.service
-    - openstack-swift-object-replicator.service
-    - openstack-swift-object-updater.service

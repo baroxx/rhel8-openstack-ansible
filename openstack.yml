@@ -1,7 +1,9 @@
 ---
 - hosts: all
+
   vars_files:
-    - constants.yml
+    - config.yml
+
   environment:
     - OS_PROJECT_DOMAIN_NAME: default
     - OS_USER_DOMAIN_NAME: default
@@ -13,7 +15,6 @@
     - OS_IMAGE_API_VERSION: 2
 
   tasks:
-  
     - name: Prepare Openstack
       import_role:
         name: prepare
@@ -53,15 +54,26 @@
         name: neutron_compute
       when: inventory_hostname in groups["compute"]
 
+    - name: Install swift proxy on controller
+      import_role:
+        name: swift_proxy
+      when: inventory_hostname in groups["controll"]
+
     - name: Install swift on object nodes
       import_role:
-        name: swift_compute
+        name: swift_object
       when: inventory_hostname in groups["object"]
 
-    - name: Install swift on controller
+    - name: Create rings for account, container and object (Swift)
       import_role:
-        name: swift_controller
+        name: swift_rings
       when: inventory_hostname in groups["controll"]
+
+    - name: Finalize swift on controller and object nodes
+      import_role:
+        name: swift_all_nodes
+      when: inventory_hostname in groups["controll"] or
+            inventory_hostname in groups["object"]
 
     - name: Install horizon
       import_role:

@@ -1,0 +1,74 @@
+---
+- name: Fetch ring files from controller
+  become: true
+  fetch: src=/etc/swift/{{ item }} dest=./ flat=yes
+  loop:
+    - account.ring.gz
+    - container.ring.gz
+    - object.ring.gz
+  when: inventory_hostname in groups["controll"]
+
+- name: Copy ring files to object nodes
+  become: true
+  copy: 
+    src: "{{ item }}" 
+    dest: /etc/swift/
+    owner: root
+    group: swift
+  loop:
+    - account.ring.gz
+    - container.ring.gz
+    - object.ring.gz
+  when: inventory_hostname in groups["object"]
+
+- name: Set variables with Jinja and copy swift.conf
+  become: true
+  template:
+    src: swift.conf.j2
+    dest: /etc/swift/swift.conf
+    owner: root
+    group: swift
+    mode: "0644"
+  when: inventory_hostname in groups["object"]
+
+- name: Set permissions for /etc/swift
+  become: true
+  file:
+    recurse: yes
+    dest: /etc/swift
+    owner: root
+    group: swift
+  when: inventory_hostname in groups["object"]
+
+- name: Enables and starts swift services
+  become: true
+  systemd:
+    name: openstack-swift-proxy.service
+    enabled: yes
+    state: started
+  when: inventory_hostname in groups["controll"]
+
+- name: Enables and starts swift services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:       
+    - openstack-swift-account.service
+    - openstack-swift-account-auditor.service
+    - openstack-swift-account-reaper.service
+    - openstack-swift-account-replicator.service
+    - openstack-swift-container.service
+    - openstack-swift-container-auditor.service
+    - openstack-swift-container-replicator.service
+    - openstack-swift-container-updater.service
+    - openstack-swift-object.service
+    - openstack-swift-object-auditor.service
+    - openstack-swift-object-replicator.service
+    - openstack-swift-object-updater.service
+  when: inventory_hostname in groups["object"]
+
+- name: Verify swift installation
+  command: swift stat
+  when: inventory_hostname in groups["controll"]

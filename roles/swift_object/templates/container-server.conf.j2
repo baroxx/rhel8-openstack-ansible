@@ -1,0 +1,45 @@
+[DEFAULT]
+
+bind_ip = {{ ansible_facts[net['management_interface']]['ipv4']['address'] }}
+bind_port = 6201
+workers = 2
+user = swift
+swift_dir = /etc/swift
+devices = /srv/node
+mount_check = false
+allowed_sync_hosts = 127.0.0.1
+
+[pipeline:main]
+
+pipeline = healthcheck recon container-server
+
+[app:container-server]
+
+use = egg:swift#container
+
+[filter:healthcheck]
+
+use = egg:swift#healthcheck
+
+[filter:recon]
+
+use = egg:swift#recon
+recon_cache_path = /var/cache/swift
+
+[container-replicator]
+
+concurrency = 4
+
+[container-updater]
+
+concurrency = 4
+
+[container-auditor]
+
+[container-sync]
+
+[filter:xprofile]
+
+use = egg:swift#xprofile
+
+[container-sharder]

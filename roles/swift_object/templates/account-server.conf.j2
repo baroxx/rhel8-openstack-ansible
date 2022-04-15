@@ -1,0 +1,40 @@
+[DEFAULT]
+
+bind_ip = {{ ansible_facts[net['management_interface']]['ipv4']['address'] }}
+bind_port = 6202
+workers = 2
+user = swift
+swift_dir = /etc/swift
+devices = /srv/node
+mount_check = false
+
+[pipeline:main]
+
+pipeline = healthcheck recon account-server
+
+[app:account-server]
+
+use = egg:swift#account
+
+[filter:healthcheck]
+
+use = egg:swift#healthcheck
+
+[filter:recon]
+
+use = egg:swift#recon
+recon_cache_path = /var/cache/swift
+
+[account-replicator]
+
+concurrency = 4
+
+[account-auditor]
+
+[account-reaper]
+
+concurrency = 4
+
+[filter:xprofile]
+
+use = egg:swift#xprofile
