@@ -2,7 +2,9 @@
 - hosts: all
 
   vars_files:
-    - config.yml
+    - vars/service-selection.yml
+    - vars/config.yml
+    - vars/secrets.yml
 
   environment:
     - OS_PROJECT_DOMAIN_NAME: default
@@ -27,55 +29,76 @@
     - name: Install keystone
       import_role:
         name: keystone
-      when: inventory_hostname in groups["controll"]
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'keystone_service|bool'
 
     - name: Install glance
       import_role:
         name: glance
-      when: inventory_hostname in groups["controll"]
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'glance_service|bool'
 
     - name: Install nova on controller
       import_role:
         name: nova_controller
-      when: inventory_hostname in groups["controll"]
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'nova_service|bool'
 
     - name: Install nova on compute nodes
       import_role:
         name: nova_compute
-      when: inventory_hostname in groups["compute"]
+      when:
+        - inventory_hostname in groups["compute"]
+        - 'nova_service|bool'
 
     - name: Install neutron on controller
       import_role:
         name: neutron_controller
-      when: inventory_hostname in groups["controll"]
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'neutron_service|bool'
 
     - name: Install neutron on compute nodes
       import_role:
         name: neutron_compute
-      when: inventory_hostname in groups["compute"]
+      when:
+        - inventory_hostname in groups["compute"]
+        - 'neutron_service|bool'
 
     - name: Install swift proxy on controller
       import_role:
         name: swift_proxy
-      when: inventory_hostname in groups["controll"]
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'swift_service|bool'
 
     - name: Install swift on object nodes
       import_role:
         name: swift_object
-      when: inventory_hostname in groups["object"]
+      when:
+        - inventory_hostname in groups["object"]
+        - 'swift_service|bool'
 
     - name: Create rings for account, container and object (Swift)
       import_role:
         name: swift_rings
-      when: inventory_hostname in groups["controll"]
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'swift_service|bool'
 
     - name: Finalize swift on controller and object nodes
       import_role:
         name: swift_all_nodes
-      when: inventory_hostname in groups["controll"] or
-            inventory_hostname in groups["object"]
+      when:
+        - inventory_hostname in groups["controll"] or inventory_hostname in groups["object"]
+        - 'swift_service|bool'
 
     - name: Install horizon
       import_role:
         name: horizon
-      when: inventory_hostname in groups["controll"]
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'horizon_service|bool'

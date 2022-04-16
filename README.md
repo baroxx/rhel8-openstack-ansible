@@ -25,7 +25,7 @@ The following packages are required on RHEL8:
 
 There should be at least one controll node and two compute nodes (three object nodes). Each target must be accessible via SSH and requires passwordless sudo rights.
 
-Swift uses directories on the object nodes as storage. The [role for the rings](swift_rings) creates rings for all storage devices set in [config.yml](config.yml) (object_storage). Each object node can have multiple storage devices. **The mount point for these storage devices must be at /srv/node/**
+Swift uses directories on the object nodes as storage. The [roles/role for the rings](roles/swift_rings) creates rings for all storage devices set in [vars/config.yml](vars/config.yml) (object_storage). Each object node can have multiple storage devices. **The mount point for these storage devices must be at /srv/node/**
 
 # Prepare and Run
 
@@ -34,9 +34,10 @@ Swift uses directories on the object nodes as storage. The [role for the rings](
 1. Install [required ansible packages](#prerequisites) on the local machine
 1. Prepare passwordless SSH and sudo on all nodes
 1. Swift: Prepare mount points for storage devices on object nodes **(only for Swift)** 
-1. Update the variables in [config.yml](config.yml) (at the moment only a setup with a singe controller node is supported)
+1. Select the [roles](#roles) in [vars/service-selection.yml](vars/service-selection.yml)
+1. Rename [vars/secrets-tmp.yml](vars/secrets-tmp.yml) to vars/secrets.yml and enter your secrets
+1. Update the variables in [vars/config.yml](vars/config.yml) (at the moment only a setup with a singe controller node is supported)
 1. Set the IPs in [inventory](inventory)
-1. Select the [roles](#roles) in [openstack.yml](openstack.yml)
 
 **Run:**
 

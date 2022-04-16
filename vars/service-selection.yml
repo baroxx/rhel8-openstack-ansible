@@ -1,0 +1,10 @@
+---
+# This are the core services and should always be true
+keystone_service: true
+glance_service: true
+nova_service: true
+neutron_service: true
+
+# This are optional services
+swift_service: true
+horizon_service: true
