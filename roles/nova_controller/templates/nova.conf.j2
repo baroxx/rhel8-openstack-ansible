@@ -74,3 +74,11 @@ enabled=true
 server_listen = {{ net['controller']['hostname'] }}
 server_proxyclient_address = {{ net['controller']['hostname'] }}
 novncproxy_base_url = http://{{ net['controller']['hostname'] }}:6080/vnc_auto.html
+
+{% if cinder_service %}
+
+[cinder]
+
+os_region_name = RegionOne
+
+{% endif %}

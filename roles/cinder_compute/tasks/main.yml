@@ -1,0 +1,12 @@
+---
+- name: Write all physical volumes to variable
+  become: true
+  register: physical_volume_name
+  shell: pvs --noheadings -o pv_name | cut -d '/' -f 3
+
+- name: Set LVM filter
+  become: true
+  replace: 
+    path: /etc/lvm/lvm.conf
+    regexp: \# filter = [ "a|^/dev/hda8$|", "r|.*|" ]
+    replace: filter = [ "a/{{ physical_volume_name.stdout }}/", "r/.*/"]

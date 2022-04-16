@@ -145,7 +145,7 @@
     name: openstack-nova-api.service
     state: restarted
 
-- name: Enables and starts nova services
+- name: Enables and starts neutron services
   become: true
   systemd:
     name: "{{ item }}"

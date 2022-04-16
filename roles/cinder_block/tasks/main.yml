@@ -1,0 +1,39 @@
+---
+- name: Write all physical volumes to variable
+  become: true
+  register: physical_volume_name
+  shell: pvs --noheadings -o pv_name | cut -d '/' -f 3
+
+- name: Set LVM filter
+  become: true
+  replace: 
+    path: /etc/lvm/lvm.conf
+    regexp: \# filter = [ "a|^/dev/hda8$|", "r|.*|" ]
+    replace: filter = [ "a/{{ physical_volume_name.stdout }}/", "r/.*/"]
+
+- name: Install cinder packages
+  become: true
+  package: 
+    name:
+      - openstack-cinder
+      - targetcli
+    state: present  
+
+- name: Set variables with Jinja and copy cinder.conf
+  become: true
+  template:
+    src: cinder.conf.j2
+    dest: /etc/cinder/cinder.conf
+    owner: root
+    group: cinder
+    mode: "0640"
+
+- name: Enables and starts cinder services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:       
+    - openstack-cinder-volume.service
+    - target.service

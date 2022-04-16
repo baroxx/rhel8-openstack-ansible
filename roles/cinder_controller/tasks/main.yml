@@ -1,0 +1,90 @@
+---
+- name: Create cinder database
+  mysql_db:
+    name: cinder
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant grants to cinder database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ cinder['db'] }}';
+      - GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'%' IDENTIFIED BY '{{ cinder['db'] }}';
+
+- name: Create cinder user in OpenStack
+  openstack.cloud.identity_user:
+    state: present
+    name: cinder
+    password: "{{ cinder['user'] }}"
+    domain: default
+
+- name: Add cinder user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: cinder
+    role: admin
+    project: service
+
+- name: Creates cinder service in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: cinderv3
+     service_type: volumev3
+     description: OpenStack Block Storage
+
+- name: Create cinder endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: cinderv3
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:8776/v3/%(project_id)s
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+    - admin
+
+- name: Install cinder packages
+  become: true
+  package: 
+    name: openstack-cinder
+    state: present 
+
+- name: Set variables with Jinja and copy cinder.conf
+  become: true
+  template:
+    src: cinder.conf.j2
+    dest: /etc/cinder/cinder.conf
+    owner: root
+    group: cinder
+    mode: "0640"
+
+- name: Database update for cinder
+  become: true
+  command: su -s /bin/sh -c "cinder-manage db sync" cinder
+
+- name: Restart nova-api service
+  become: true
+  systemd:
+    name: openstack-nova-api.service
+    state: restarted
+
+- name: Enables and starts cinder services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:       
+    - openstack-cinder-api.service
+    - openstack-cinder-scheduler.service
+
+- name: Verify cinder installation
+  command: openstack volume service list

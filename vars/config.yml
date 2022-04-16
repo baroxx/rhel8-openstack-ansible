@@ -48,3 +48,5 @@ net:
       ]
     }
   ]
+# Name of the LVM volume group. Uses the default group rhel created on system installation
+volume_group_name: "rhel"

@@ -14,7 +14,6 @@
     regexp: \#ServerName www.example.com:80
     replace: ServerName {{ net['controller']['hostname'] }}
 
-
 - name: Start httpd service
   become: true
   systemd:

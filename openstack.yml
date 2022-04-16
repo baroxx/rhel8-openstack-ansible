@@ -96,6 +96,27 @@
         - inventory_hostname in groups["controll"] or inventory_hostname in groups["object"]
         - 'swift_service|bool'
 
+    - name: Install cinder on controller
+      import_role:
+        name: cinder_controller
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'cinder_service|bool'
+
+    - name: Install cinder on block nodes
+      import_role:
+        name: cinder_block
+      when:
+        - inventory_hostname in groups["block"]
+        - 'cinder_service|bool'
+
+    - name: Configure cinder on compute nodes
+      import_role:
+        name: cinder_compute
+      when:
+        - inventory_hostname in groups["compute"]
+        - 'cinder_service|bool'
+
     - name: Install horizon
       import_role:
         name: horizon

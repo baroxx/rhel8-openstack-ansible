@@ -11,6 +11,7 @@ This project uses Ansible to setup an OpenStack cluster with the services listed
 - Optional services
 
     - **Swift** - for object storage
+    - **Cinder** - for block storage **(please read the readmes of the roles)**
     - **Horizon** - OpenStack UI
 
 This [project for RHEL8 Kickstart](https://github.com/baroxx/rhel8-kickstart) provides kickstart files to automate the installation of the nodes. There are also scripts to create some virtual machines.
@@ -51,25 +52,29 @@ You can find more information in the README of the roles. You should install at 
 
 **It is recommended to use the roles in this order.**
 
-- [Preparation](prepare)
-- [Misc Services](misc)
-- [keystone](keystone)
-- [Glance](glance)
+- [Preparation](roles/prepare)
+- [Misc Services](roles/misc)
+- [keystone](roles/keystone)
+- [Glance](roles/glance)
 - Nova
 
-    - [Controller](nova_controll)
-    - [Compute node](nova_compute)
+    - [Controller](roles/nova_controll)
+    - [Compute node](roles/nova_compute)
 - Neutron
 
-    - [Controller](neutron_controll)
-    - [Compute node](neutron_compute)
+    - [Controller](roles/neutron_controll)
+    - [Compute node](roles/neutron_compute)
 - Swift
 
-    - [Proxy server](swift_proxy)
-    - [Object nodes](swift_object)
-    - [Rings](swift_rings)
-    - [All nodes](swift_all_nodes)
-- [Horizon](Horizon)
+    - [Proxy server](roles/swift_proxy)
+    - [Object nodes](roles/swift_object)
+    - [Rings](roles/swift_rings)
+    - [All nodes](roles/swift_all_nodes)
+- Cinder
+
+    - [Controller](roles/cinder_controll)
+    - [Block node](roles/cinter_block)
+- [Horizon](roles/Horizon)
 
 # OpenStack module
 
