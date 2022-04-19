@@ -37,3 +37,11 @@
   loop:       
     - openstack-cinder-volume.service
     - target.service
+
+- name: Enables and starts cinder backup services (if Swift is enabled)
+  become: true
+  systemd:
+    name: openstack-cinder-backup.service
+    enabled: yes
+    state: started
+  when: 'swift_service|bool'
