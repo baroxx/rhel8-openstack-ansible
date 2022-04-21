@@ -117,6 +117,13 @@
         - inventory_hostname in groups["compute"]
         - 'cinder_service|bool'
 
+    - name: Install barbican on controller
+      import_role:
+        name: barbican_controller
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'barbican_service|bool'
+
     - name: Install horizon
       import_role:
         name: horizon

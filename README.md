@@ -12,6 +12,7 @@ This project uses Ansible to setup an OpenStack cluster with the services listed
 
     - **Swift** - for object storage
     - **Cinder** - for block storage **(please read the readmes of the roles)**
+    - **Barbican** - for key management
     - **Horizon** - OpenStack UI
 
 This [project for RHEL8 Kickstart](https://github.com/baroxx/rhel8-kickstart) provides kickstart files to automate the installation of the nodes. There are also scripts to create some virtual machines.
@@ -57,23 +58,21 @@ You can find more information in the README of the roles. You should install at 
 - [keystone](roles/keystone)
 - [Glance](roles/glance)
 - Nova
-
     - [Controller](roles/nova_controll)
     - [Compute node](roles/nova_compute)
 - Neutron
-
     - [Controller](roles/neutron_controll)
     - [Compute node](roles/neutron_compute)
 - Swift
-
     - [Proxy server](roles/swift_proxy)
     - [Object nodes](roles/swift_object)
     - [Rings](roles/swift_rings)
     - [All nodes](roles/swift_all_nodes)
 - Cinder
-
     - [Controller](roles/cinder_controll)
     - [Block node](roles/cinter_block)
+- Barbican
+    - [Controller](roles/barbican_controll)
 - [Horizon](roles/Horizon)
 
 # OpenStack module

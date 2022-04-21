@@ -1,0 +1,110 @@
+---
+- name: Create barbican database
+  mysql_db:
+    name: barbican
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant grants to barbican database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON barbican.* TO 'barbican'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ barbican['db'] }}';
+      - GRANT ALL PRIVILEGES ON barbican.* TO 'barbican'@'%' IDENTIFIED BY '{{ barbican['db'] }}';
+
+- name: Create barbican user in OpenStack
+  no_log: true
+  openstack.cloud.identity_user:
+    state: present
+    name: barbican
+    password: "{{ barbican['user'] }}"
+    domain: default
+
+- name: Create creator role in OpenStack
+  openstack.cloud.identity_role:
+    state: present
+    name: creator
+
+- name: Add barbican user to creator and admin role in OpenStack
+  openstack.cloud.role_assignment:
+    user: barbican
+    role: "{{ item }}"
+    project: service
+  loop:
+    - admin
+    - creator
+
+- name: Create barbican service in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: barbican
+     service_type: key-manager
+     description: OpenStack Key Manager
+
+- name: Create image endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: barbican
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:9311/v1
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+    - admin
+
+- name: Open 9311 TCP port for barbican endpoints
+  become: true
+  firewalld:
+    port: 9311/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Install barbican package
+  become: true
+  package:
+    name: "{{ item }}"
+    state: present
+  loop: 
+    - openstack-barbican-api
+    - python3-barbicanclient
+
+- name: Set variables with Jinja and copy barbican.conf
+  become: true
+  template:
+    src: barbican.conf.j2
+    dest: /etc/barbican/barbican.conf
+    owner: root
+    group: barbican
+    mode: "0644"
+
+- name: Database sync for barbican
+  become: true
+  command: su -s /bin/sh -c "barbican-manage db upgrade" barbican
+
+- name: Copy file /etc/httpd/conf.d/wsgi-barbican.conf
+  become: true
+  copy:
+    src: wsgi-barbican.conf
+    dest: /etc/httpd/conf.d/wsgi-barbican.conf
+    owner: root
+    group: barbican
+    mode: "0644"
+
+- name: Enable and start barbican service
+  become: true
+  systemd:
+    name: httpd.service
+    enabled: yes
+    state: restarted
+
+- name: Verify barbican installation
+  command: openstack secret list

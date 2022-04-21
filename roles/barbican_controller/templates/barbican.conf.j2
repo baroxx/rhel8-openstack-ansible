@@ -1,0 +1,51 @@
+[DEFAULT]
+
+sql_connection = mysql+pymysql://barbican:{{ barbican['db'] }}@{{ net['controller']['hostname'] }}/barbican
+transport_url = rabbit://openstack:{{ rabbit['pass'] }}@{{ net['controller']['hostname'] }}
+
+[keystone_authtoken]
+
+www_authenticate_uri = http://{{ net['controller']['hostname'] }}:5000
+auth_url = http://{{ net['controller']['hostname'] }}:5000
+memcached_servers = {{ net['controller']['hostname'] }}:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = barbican
+password = {{ barbican['user'] }}
+
+
+{% if key_management['plugin'] == 'simple' %}
+
+[secretstore]
+
+enabled_secretstore_plugins = store_crypto
+
+[crypto]
+
+enabled_crypto_plugins = simple_crypto
+
+[simple_crypto_plugin]
+# the kek should be a 32-byte value which is base64 encoded
+kek = '{{ barbican['kek'] }}'
+
+{% endif %}
+
+{% if key_management['plugin'] == 'vault' %}
+
+[secretstore]
+
+enabled_secretstore_plugins = vault_plugin
+
+[vault_plugin]
+
+root_token_id = {{ key_management['root_token_id'] }}
+approle_role_id = {{ key_management['approle_role_id'] }}
+approle_secret_id = {{ key_management['approle_secret_id'] }}
+kv_mountpoint = secret
+vault_url = {{ key_management['vault_url'] }}
+use_ssl = {{ key_management['use_ssl'] }}
+ssl_ca_crt_file = {{ key_management['ssl_ca_crt_file'] }}
+
+{% endif %}

@@ -8,4 +8,5 @@ neutron_service: true
 # This are optional services
 swift_service: true
 cinder_service: true
+barbican_service: true
 horizon_service: true

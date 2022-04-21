@@ -50,3 +50,14 @@ net:
   ]
 # Name of the LVM volume group. Uses the default group rhel created on system installation
 volume_group_name: "rhel"
+key_management:
+  # Choose simple or vault
+  plugin: simple
+  # These values are for the vault plugin
+  root_token_id: 
+  approle_role_id: 
+  approle_secret_id: 
+  kv_mountpoint:  secret
+  vault_url: https://10.88.0.4:8200
+  use_ssl: True
+  ssl_ca_crt_file: /opt/vault/tls/tls-ca.crt

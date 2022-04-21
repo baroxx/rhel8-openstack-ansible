@@ -51,6 +51,14 @@
     - internal
     - admin
 
+- name: Open 8776 TCP port for cinder endpoints
+  become: true
+  firewalld:
+    port: 8776/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
 - name: Install cinder packages
   become: true
   package: 
