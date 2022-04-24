@@ -71,11 +71,10 @@
 - name: Install barbican package
   become: true
   package:
-    name: "{{ item }}"
+    name: 
+      - openstack-barbican-api
+      - python3-barbicanclient
     state: present
-  loop: 
-    - openstack-barbican-api
-    - python3-barbicanclient
 
 - name: Set variables with Jinja and copy barbican.conf
   become: true
