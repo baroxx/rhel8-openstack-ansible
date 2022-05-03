@@ -1,0 +1,21 @@
+[DEFAULT]
+
+log_file = trove-guestagent.log
+log_dir = /var/log/trove/
+ignore_users = os_admin
+control_exchange = trove
+transport_url = rabbit://openstack:{{ rabbit['pass'] }}@{{ net['controller']['hostname'] }}
+rpc_backend = rabbit
+command_process_timeout = 60
+use_syslog = False
+debug = True
+
+[service_credentials]
+
+auth_url = http://{{ net['controller']['hostname'] }}:5000/v3
+region_name = RegionOne
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = trove
+password = {{ trove['user'] }}

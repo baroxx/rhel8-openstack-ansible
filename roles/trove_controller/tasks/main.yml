@@ -1,0 +1,104 @@
+---
+- name: Create trove database
+  mysql_db:
+    name: trove
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant grants to trove database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON trove.* TO 'trove'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ trove['db'] }}';
+      - GRANT ALL PRIVILEGES ON trove.* TO 'trove'@'%' IDENTIFIED BY '{{ trove['db'] }}';
+
+- name: Create trove user in OpenStack
+  openstack.cloud.identity_user:
+    state: present
+    name: trove
+    password: "{{ trove['user'] }}"
+    domain: default
+
+- name: Add trove user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: trove
+    role: admin
+    project: service
+
+- name: Creates trove service in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: trove
+     service_type: database
+     description: OpenStack Database
+
+- name: Create trove endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: trove
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:8779/v1.0/%(tenant_id)s
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+    - admin
+
+- name: Open 8779 TCP port for trove endpoints
+  become: true
+  firewalld:
+    port: 8779/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Install trove packages
+  become: true
+  package: 
+    name: 
+      - openstack-trove
+      - python3-troveclient
+    state: present 
+
+- name: Set variables with Jinja and copy trove.conf
+  become: true
+  template:
+    src: trove.conf.j2
+    dest: /etc/trove/trove.conf
+    owner: root
+    group: trove
+    mode: "0640"
+
+- name: Set variables with Jinja and copy trove-guestagent.conf
+  become: true
+  template:
+    src: trove-guestagent.conf.j2
+    dest: /etc/trove/trove-guestagent.conf
+    owner: root
+    group: trove
+    mode: "0640"
+
+- name: Database update for trove
+  become: true
+  command: su -s /bin/sh -c "trove-manage db_sync" trove
+
+- name: Enables and starts trove services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:       
+    - openstack-trove-api.service
+    - openstack-trove-taskmanager.service
+    - openstack-trove-conductor.service
+
+- name: Verify trove installation
+  command: openstack database instance list

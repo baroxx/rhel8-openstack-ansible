@@ -124,6 +124,13 @@
         - inventory_hostname in groups["controll"]
         - 'barbican_service|bool'
 
+    - name: Install trove on controller
+      import_role:
+        name: trove_controller
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'trove_service|bool'
+
     - name: Install horizon
       import_role:
         name: horizon

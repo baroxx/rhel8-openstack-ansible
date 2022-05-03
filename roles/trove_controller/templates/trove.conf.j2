@@ -1,0 +1,53 @@
+[DEFAULT]
+
+network_driver = trove.network.neutron.NeutronDriver
+cinder_volume_type = lvmdriver-1
+nova_keypair = trove-mgmt
+default_datastore = mysql
+taskmanager_manager = trove.taskmanager.manager.Manager
+trove_api_workers = 5
+transport_url = rabbit://openstack:{{ rabbit['pass'] }}@{{ net['controller']['hostname'] }}:5672/
+control_exchange = trove
+rpc_backend = rabbit
+reboot_time_out = 300
+usage_timeout = 900
+agent_call_high_timeout = 1200
+debug = True
+
+[keystone_authtoken]
+
+memcached_servers = {{ net['controller']['hostname'] }}:11211
+auth_url = http://{{ net['controller']['hostname'] }}:5000/v3
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = trove
+password = {{ trove['user'] }}
+
+[service_credentials]
+
+auth_url = http://{{ net['controller']['hostname'] }}:5000/v3
+region_name = RegionOne
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = trove
+password = {{ trove['user'] }}
+
+[database]
+
+connection = mysql+pymysql://root:{{ db['pass'] }}@{{ net['controller']['hostname'] }}/trove?charset=utf8
+
+[mariadb]
+
+tcp_ports = 3306,4444,4567,4568
+
+[mysql]
+
+tcp_ports = 3306
+
+[postgresql]
+
+tcp_ports = 5432

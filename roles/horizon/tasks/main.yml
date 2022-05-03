@@ -31,6 +31,13 @@
     immediate: yes
     state: enabled
 
+- name: Install Trove dashbord
+  become: true
+  package:
+    name: openstack-trove-ui
+    state: present
+  when: 'trove_service|bool'
+
 - name: Restart httpd service
   become: true
   systemd:
