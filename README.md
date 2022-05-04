@@ -13,6 +13,8 @@ This project uses Ansible to setup an OpenStack cluster with the services listed
     - **Swift** - for object storage
     - **Cinder** - for block storage **(please read the readmes of the roles)**
     - **Barbican** - for key management
+    - **Trove** - for databases
+    - **Heat** - for orchestrations
     - **Horizon** - OpenStack UI
 
 This [project for RHEL8 Kickstart](https://github.com/baroxx/rhel8-kickstart) provides kickstart files to automate the installation of the nodes. There are also scripts to create some virtual machines.
@@ -72,7 +74,11 @@ You can find more information in the README of the roles. You should install at 
     - [Controller](roles/cinder_controll)
     - [Block node](roles/cinter_block)
 - Barbican
-    - [Controller](roles/barbican_controll)
+    - [Controller](roles/barbican)
+- Trove
+    - [Controller](roles/trove)
+- Heat
+    - [Controller](roles/heat)
 - [Horizon](roles/Horizon)
 
 # OpenStack module
