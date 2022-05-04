@@ -119,14 +119,14 @@
 
     - name: Install barbican on controller
       import_role:
-        name: barbican_controller
+        name: barbican
       when:
         - inventory_hostname in groups["controll"]
         - 'barbican_service|bool'
 
     - name: Install trove on controller
       import_role:
-        name: trove_controller
+        name: trove
       when:
         - inventory_hostname in groups["controll"]
         - 'trove_service|bool'
