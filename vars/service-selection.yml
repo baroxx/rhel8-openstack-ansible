@@ -10,4 +10,5 @@ swift_service: true
 cinder_service: true
 barbican_service: true
 trove_service: true
+heat_service: true
 horizon_service: true

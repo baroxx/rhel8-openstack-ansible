@@ -1,0 +1,154 @@
+---
+- name: Create heat database
+  mysql_db:
+    name: heat
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant heat to heat database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON heat.* TO 'heat'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ heat['db'] }}';
+      - GRANT ALL PRIVILEGES ON heat.* TO 'heat'@'%' IDENTIFIED BY '{{ heat['db'] }}';
+
+- name: Create heat user in OpenStack
+  no_log: true
+  openstack.cloud.identity_user:
+    state: present
+    name: heat
+    password: "{{ heat['user'] }}"
+    domain: default
+
+- name: Add heat user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: heat
+    role: admin
+    project: service
+
+- name: Create heat service in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: heat
+     service_type: orchestration
+     description: OpenStack Orchestration
+
+- name: Create heat-cfn service in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: heat-cfn
+     service_type: cloudformation
+     description: OpenStack Orchestration Cloudformation
+
+- name: Create image endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: heat
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:8004/v1/%(tenant_id)s
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+    - admin
+
+- name: Create image endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: heat-cfn
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:8000/v1
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+    - admin
+
+- name: Open 8004 TCP port for heat endpoints
+  become: true
+  firewalld:
+    port: 8004/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Open 8000 TCP port for heat endpoints
+  become: true
+  firewalld:
+    port: 8000/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Create a domain
+  openstack.cloud.identity_domain:
+     state: present
+     name: heat
+     description: "Stack projects and users"
+
+- name: Create heat_domain_admin user in OpenStack
+  no_log: true
+  openstack.cloud.identity_user:
+    state: present
+    name: heat_domain_admin
+    password: "{{ heat['admin'] }}"
+    domain: heat
+
+- name: Add heat user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: heat_domain_admin
+    role: admin
+    domain: heat
+
+- name: Create heat_stack_owner role
+  openstack.cloud.identity_role:
+    state: present
+    name: heat_stack_owner
+
+- name: Create heat_stack_user role
+  openstack.cloud.identity_role:
+    state: present
+    name: heat_stack_user
+
+- name: Install heat packages
+  become: true
+  package:
+    name: 
+      - openstack-heat-api
+      - openstack-heat-api-cfn
+      - openstack-heat-engine
+    state: present
+
+- name: Set variables with Jinja and copy heat.conf
+  become: true
+  template:
+    src: heat.conf.j2
+    dest: /etc/heat/heat.conf
+    owner: root
+    group: heat
+    mode: "0644"
+
+- name: Database sync for heat
+  become: true
+  command: su -s /bin/sh -c "heat-manage db_sync" heat
+
+- name: Enables and starts heat services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:       
+    - openstack-heat-api.service
+    - openstack-heat-api-cfn.service
+    - openstack-heat-engine.service
+
+- name: Verify heat installation
+  command: openstack orchestration service list

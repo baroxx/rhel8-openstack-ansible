@@ -131,6 +131,13 @@
         - inventory_hostname in groups["controll"]
         - 'trove_service|bool'
 
+    - name: Install heat on controller
+      import_role:
+        name: heat
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'heat_service|bool'
+
     - name: Install horizon
       import_role:
         name: horizon
