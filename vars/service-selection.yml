@@ -11,4 +11,5 @@ cinder_service: true
 barbican_service: true
 trove_service: true
 heat_service: true
+magnum_service: true
 horizon_service: true

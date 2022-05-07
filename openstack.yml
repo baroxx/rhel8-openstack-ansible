@@ -138,6 +138,13 @@
         - inventory_hostname in groups["controll"]
         - 'heat_service|bool'
 
+    - name: Install magnum on controller
+      import_role:
+        name: magnum
+      when:
+        - inventory_hostname in groups["controll"]
+        - 'magnum_service|bool'
+
     - name: Install horizon
       import_role:
         name: horizon

@@ -1,0 +1,116 @@
+---
+- name: Create magnum database
+  mysql_db:
+    name: magnum
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    state: present
+
+- name: Grant grants to magnum database
+  no_log: true
+  community.mysql.mysql_query:
+    config_file: /etc/my.cnf.d/openstack.cnf
+    login_host: "{{ net['controller']['hostname'] }}"
+    login_user: root
+    login_password: "{{ db['pass'] }}"
+    query: 
+      - GRANT ALL PRIVILEGES ON magnum.* TO 'magnum'@'{{ net['controller']['hostname'] }}' IDENTIFIED BY '{{ magnum['db'] }}';
+      - GRANT ALL PRIVILEGES ON magnum.* TO 'magnum'@'%' IDENTIFIED BY '{{ magnum['db'] }}';
+
+- name: Create magnum user in OpenStack
+  no_log: true
+  openstack.cloud.identity_user:
+    state: present
+    name: magnum
+    password: "{{ magnum['user'] }}"
+    domain: default
+
+- name: Add magnum user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: magnum
+    role: admin
+    project: service
+
+- name: Create magnum service in OpenStack
+  openstack.cloud.catalog_service: 
+     state: present
+     name: magnum
+     service_type: container-infra
+     description: OpenStack Container Infrastructure Management Service
+
+- name: Create container-infra endpoints in OpenStack
+  openstack.cloud.endpoint:
+    service: magnum
+    endpoint_interface: "{{ item }}"
+    url: http://{{ net['controller']['hostname'] }}:9511/v1
+    region: RegionOne
+    state: present
+  loop:
+    - public
+    - internal
+    - admin
+
+- name: Open 9511 TCP port for magnum endpoints
+  become: true
+  firewalld:
+    port: 9511/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Create a domain for Magnum
+  openstack.cloud.identity_domain:
+     state: present
+     name: magnum
+     description: "Owns users and projects created by magnum"
+
+- name: Create  magnum_domain_admin user in OpenStack
+  no_log: true
+  openstack.cloud.identity_user:
+    state: present
+    name:  magnum_domain_admin
+    password: "{{ magnum['admin'] }}"
+    domain: magnum
+
+- name: Add magnum_domain_admin user to default service in OpenStack
+  openstack.cloud.role_assignment:
+    user: magnum_domain_admin
+    role: admin
+    domain: magnum
+
+- name: Install magnum package
+  become: true
+  package:
+    name: 
+      - openstack-magnum-api
+      - openstack-magnum-conductor
+      - python3-magnumclient
+    state: present
+
+- name: Set variables with Jinja and copy magnum.conf
+  become: true
+  template:
+    src: magnum.conf.j2
+    dest: /etc/magnum/magnum.conf
+    owner: root
+    group: magnum
+    mode: "0644"
+
+- name: Database sync for magnum
+  become: true
+  command: su -s /bin/sh -c "magnum-db-manage upgrade" magnum
+
+- name: Enables and starts magnum services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:       
+    - openstack-magnum-api.service
+    - openstack-magnum-conductor.service
+
+- name: Verify magnum installation
+  command: openstack coe service list

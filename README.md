@@ -15,6 +15,7 @@ This project uses Ansible to setup an OpenStack cluster with the services listed
     - **Barbican** - for key management
     - **Trove** - for databases
     - **Heat** - for orchestrations
+    - **Magnum** - for container orchestration
     - **Horizon** - OpenStack UI
 
 This [project for RHEL8 Kickstart](https://github.com/baroxx/rhel8-kickstart) provides kickstart files to automate the installation of the nodes. There are also scripts to create some virtual machines.
@@ -55,10 +56,10 @@ You can find more information in the README of the roles. You should install at 
 
 **It is recommended to use the roles in this order.**
 
-- [Preparation](roles/prepare)
-- [Misc Services](roles/misc)
-- [keystone](roles/keystone)
-- [Glance](roles/glance)
+- [Preparation](roles/prepare) (all nodes)
+- [Misc Services](roles/misc) (contoller)
+- [keystone](roles/keystone) (contoller)
+- [Glance](roles/glance) (contoller)
 - Nova
     - [Controller](roles/nova_controll)
     - [Compute node](roles/nova_compute)
@@ -73,13 +74,11 @@ You can find more information in the README of the roles. You should install at 
 - Cinder
     - [Controller](roles/cinder_controll)
     - [Block node](roles/cinter_block)
-- Barbican
-    - [Controller](roles/barbican)
-- Trove
-    - [Controller](roles/trove)
-- Heat
-    - [Controller](roles/heat)
-- [Horizon](roles/Horizon)
+- [Barbican](roles/barbican) (contoller)
+- [Trove](roles/trove) (contoller)
+- [Heat](roles/heat) (contoller)
+- [Magnum](roles/magnum) (contoller)
+- [Horizon](roles/Horizon) (contoller)
 
 # OpenStack module
 

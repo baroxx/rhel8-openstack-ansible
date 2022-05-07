@@ -1,0 +1,58 @@
+[DEFAULT]
+
+transport_url = rabbit://openstack:{{ rabbit['pass'] }}@{{ net['controller']['hostname'] }}
+
+[database]
+
+connection = mysql+pymysql://magnum:{{ magnum['db'] }}@{{ net['controller']['hostname'] }}/magnum
+
+[api]
+
+host = {{ net['controller']['ip'] }}
+
+[certificates]
+
+{% if barbican_service %}
+
+cert_manager_type = barbican
+
+{% else %}
+
+cert_manager_type = x509keypair
+
+{% endif %}
+
+[cinder_client]
+
+region_name = RegionOne
+
+[keystone_authtoken]
+
+memcached_servers = {{ net['controller']['hostname'] }}:11211
+auth_version = v3
+www_authenticate_uri = http://{{ net['controller']['hostname'] }}:5000/v3
+project_domain_id = default
+project_name = service
+user_domain_id = default
+password = {{ magnum['user'] }}
+username = magnum
+auth_url = http://{{ net['controller']['hostname'] }}:5000
+auth_type = password
+admin_user = magnum
+admin_password = {{ magnum['admin'] }}
+admin_tenant_name = service
+
+[trust]
+
+trustee_domain_name = magnum
+trustee_domain_admin_name = magnum_domain_admin
+trustee_domain_admin_password = {{ magnum['admin'] }}
+trustee_keystone_interface = internal
+
+[oslo_messaging_notifications]
+
+driver = messaging
+
+[oslo_concurrency]
+
+lock_path = /var/lib/magnum/tmp
