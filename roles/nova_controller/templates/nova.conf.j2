@@ -52,6 +52,10 @@ metadata_proxy_shared_secret = {{ metadata['pass'] }}
 
 lock_path=/var/lib/nova/tmp
 
+[oslo_policy]
+
+policy_file = policy.yaml
+
 [placement]
 
 auth_url = http://{{ net['controller']['hostname'] }}:5000/v3

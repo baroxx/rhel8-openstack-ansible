@@ -2,7 +2,10 @@
 - name: Install nova package
   become: true
   package:
-    name: openstack-nova-compute
+    name: 
+      - openstack-nova-compute
+      - libguestfs-tools
+      - qemu-kvm
     state: present
 
 - name: Set variables with Jinja and copy nova.conf

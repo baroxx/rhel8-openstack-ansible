@@ -136,7 +136,7 @@
   openstack.cloud.endpoint:
     service: placement
     endpoint_interface: "{{ item }}"
-    url: http://{{ net['controller']['hostname'] }}:8778/v3
+    url: http://{{ net['controller']['hostname'] }}:8778
     region: RegionOne
     state: present
   loop:
@@ -175,6 +175,21 @@
     group: nova
     mode: "0640"
 
+- name: Remove nova policy.json
+  become: true
+  ansible.builtin.file:
+    path: /etc/nova/policy.json
+    state: absent
+
+- name: Create nova policy.yaml
+  become: true
+  ansible.builtin.file:
+    path: /etc/nova/policy.yaml
+    state: touch
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: Set variables with Jinja and copy placement.conf 
   become: true
   template:
@@ -183,6 +198,15 @@
     owner: root
     group: placement
     mode: "0640"
+
+- name: Copy file /etc/httpd/conf.d/00-placement-api.conf
+  become: true
+  copy:
+    src: 00-placement-api.conf
+    dest: /etc/httpd/conf.d/00-placement-api.conf
+    owner: root
+    group: root
+    mode: "0644"
 
 - name: Populate the nova-api database
   become: true
@@ -209,6 +233,26 @@
 - name: Database syncs for placement
   become: true
   command: su -s /bin/sh -c "placement-manage db sync" placement
+
+- name: Remove placement policy.json
+  become: true
+  ansible.builtin.file:
+    path: /etc/placement/policy.json
+    state: absent
+
+- name: Create placement policy.yaml
+  become: true
+  ansible.builtin.file:
+    path: /etc/placement/policy.yaml
+    state: touch
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install osc-placement python package
+  become: true
+  pip:
+    name: osc-placement
 
 - name: Enables and starts nova services
   become: true
