@@ -71,21 +71,16 @@
     - internal
     - admin
 
-- name: Open 8004 TCP port for heat endpoints
+- name: Open 8000/tcp and 8004/tcp port for heat endpoints
   become: true
   firewalld:
-    port: 8004/tcp
+    port: 
     permanent: yes
     immediate: yes
     state: enabled
-
-- name: Open 8000 TCP port for heat endpoints
-  become: true
-  firewalld:
-    port: 8000/tcp
-    permanent: yes
-    immediate: yes
-    state: enabled
+  loop:
+    - 8004/tcp
+    - 8000/tcp
 
 - name: Create a domain
   openstack.cloud.identity_domain:

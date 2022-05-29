@@ -51,6 +51,14 @@
     - internal
     - admin
 
+- name: Open 9696 TCP port for neutron endpoints
+  become: true
+  firewalld:
+    port: 9696/tcp
+    permanent: yes
+    immediate: yes
+    state: enabled
+
 - name: Install neutron packages
   become: true
   package:
@@ -138,6 +146,13 @@
     name: os_neutron_dac_override
     state: yes
     persistent: yes
+
+- name: Set dnsmasq user to neutron
+  become: true
+  replace: 
+    path: /etc/dnsmasq.conf
+    regexp: 'user=dnsmasq'
+    replace: "user=neutron"
 
 - name: Restart nova-api service
   become: true
