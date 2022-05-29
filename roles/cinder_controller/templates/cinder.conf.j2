@@ -2,7 +2,7 @@
 
 transport_url = rabbit://openstack:{{ rabbit['pass'] }}@{{ net['controller']['hostname'] }}
 auth_strategy = keystone
-my_ip = {{ net['controller']['ip'] }}
+my_ip = {{ ansible_facts[net['management_interface']]['ipv4']['address'] }}
 
 [database]
 

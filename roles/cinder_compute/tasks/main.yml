@@ -8,5 +8,5 @@
   become: true
   replace: 
     path: /etc/lvm/lvm.conf
-    regexp: \# filter = [ "a|^/dev/hda8$|", "r|.*|" ]
+    regexp: '# filter = \[ "a\|\^\/dev\/hda8\$\|", "r\|\.\*\|" \]'
     replace: filter = [ "a/{{ physical_volume_name.stdout }}/", "r/.*/"]

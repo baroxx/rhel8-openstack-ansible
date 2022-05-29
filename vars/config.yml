@@ -49,7 +49,10 @@ net:
     }
   ]
 # Name of the LVM volume group. Uses the default group rhel created on system installation
-volume_group_name: "rhel"
+volume_group:
+  name: "cinder-volumes"
+  # Filter for each volume group of the node (eg. sda2 = os vg and sda3 = cinder vg)
+  filter: 'filter = [ "a/sda2/", "a/sda3/", "r/.*/"]'
 key_management:
   # Choose simple or vault
   plugin: simple

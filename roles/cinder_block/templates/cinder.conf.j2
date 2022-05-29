@@ -2,7 +2,7 @@
 
 transport_url = rabbit://openstack:{{ rabbit['pass'] }}@{{ net['controller']['hostname'] }}
 auth_strategy = keystone
-my_ip = 
+my_ip = {{ ansible_facts[net['management_interface']]['ipv4']['address'] }}
 enabled_backends = lvm
 glance_api_servers = http://{{ net['controller']['hostname'] }}:9292
 
@@ -31,7 +31,7 @@ password = {{ cinder['user'] }}
 [lvm]
 
 volume_driver = cinder.volume.drivers.lvm.LVMVolumeDriver
-volume_group = {{ volume_group_name }}
+volume_group = {{ volume_group['name'] }}
 target_protocol = iscsi
 target_helper = lioadm
 
