@@ -42,7 +42,7 @@ Swift uses directories on the object nodes as storage. The [roles/role for the r
 1. Select the [roles](#roles) in [vars/service-selection.yml](vars/service-selection.yml)
 1. Rename [vars/secrets-tmp.yml](vars/secrets-tmp.yml) to vars/secrets.yml and enter your secrets
 1. Update the variables in [vars/config.yml](vars/config.yml) (at the moment only a setup with a singe controller node is supported)
-1. Set the IPs in [inventory](inventory)
+1. Set the IPs (or ssh hosts from ~/.ssh/config) in [inventory](inventory)
 
 **Run:**
 
