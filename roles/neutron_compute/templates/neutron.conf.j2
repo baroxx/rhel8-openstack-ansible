@@ -2,6 +2,7 @@
 
 transport_url = rabbit://openstack:{{ rabbit['pass'] }}@{{ net['controller']['hostname'] }}
 auth_strategy = keystone
+rootwrap_config = /etc/neutron/rootwrap.conf
 
 [keystone_authtoken]
 
@@ -18,3 +19,8 @@ password = {{ neutron['user'] }}
 [oslo_concurrency]
 
 lock_path = /var/lib/neutron/tmp
+
+[privsep]
+
+user = root
+helper_command = true

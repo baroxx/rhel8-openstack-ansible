@@ -6,6 +6,8 @@ transport_url = rabbit://openstack:{{ rabbit['pass'] }}@{{ net['controller']['ho
 compute_driver = libvirt.LibvirtDriver
 state_path = /var/lib/nova
 use_neutron = true
+logdir = /var/log/nova
+rootwrap_config = /etc/nova/rootwrap.conf
 
 [api]
 

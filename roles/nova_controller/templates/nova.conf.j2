@@ -4,6 +4,9 @@ my_ip = {{ net['controller']['hostname'] }}
 enabled_apis=osapi_compute,metadata
 transport_url = rabbit://openstack:{{ rabbit['pass'] }}@{{ net['controller']['hostname'] }}:5672/
 use_neutron = true
+logdir = /var/log/nova
+rootwrap_config = /etc/nova/rootwrap.conf
+
 
 [api]
 
